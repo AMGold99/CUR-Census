@@ -43,19 +43,33 @@ listCensusMetadata(
 
 # PUMA Total population by race: N_r
 
-pumapop_vars <- c("B03002_003E", "B02001_003E",
-                  "B02001_004E", "B02001_005E",
-                  "B03002_012E", "B02001_006E",
-                  "B02001_007E", "B02001_008E")
+pumapop_vars <- c("B03002_003E", "B03002_004E", "B03002_005E", 
+                  "B03002_006E", "B03002_007E", "B03002_008E", 
+                  "B03002_009E", "B03002_012E", "B03002_013E", 
+                  "B03002_014E", "B03002_015E", "B03002_016E", 
+                  "B03002_017E", "B03002_018E", "B03002_019E")
 
 pumaRACE <- getCensus(name = "acs/acs5",
                       vintage = 2020,
                       vars = bgpop_vars,
-                      region = "public use microdata area:*")
+                      region = "public use microdata area:*") |>
+  mutate(
+    WhiteNH = B03002_003E,
+    BlackNH = B03002_004E,
+    AminNH = B03002_005E,
+    AsianNH = B03002_006E + B03002_007E,
+    OtherNH = B03002_008E,
+    TwoMore = B03002_009E,
+    Hispan = B03002_012E,
+    WhiteHispan = B03002_013E,
+    BlackHispan = B03002_014E,
+    HispanOther = B03002_015E + B03002_016E + B03002_017E + B03002_018E + B03002_019E,
+    .keep = "unused"
+  )
 
 write_csv(pumaRACE,
-          file.path(output_dir, "puma_race.csv")
-          )
+          "output/puma_race.csv")
+          
 
 # Google Drive Connection ####
 
@@ -66,7 +80,7 @@ drive_auth(email = "gold1@stolaf.edu")
 census_id <- as_id("https://drive.google.com/drive/folders/1_08a11RyvSLHbzk9Kj2sylBVHqSmBX1-")
 
 # upload bg_race to census2022
-drive_upload(file.path(output_dir,"puma_race.csv"),
+drive_upload("output/puma_race.csv",
              census_id,
              overwrite = TRUE)
 

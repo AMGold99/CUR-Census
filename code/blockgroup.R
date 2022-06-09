@@ -16,7 +16,6 @@ library(doParallel)
 library(googledrive)
 
 
-
 # Set API key ####
 Sys.setenv(CENSUS_KEY="24a0e6e31ba71d8b3e0f70ba0b4037fd194d6aec")
 
@@ -30,20 +29,10 @@ apis |>
 
 listCensusMetadata(
   name = "2020/acs/acs5",
-  type = "variables")
-
-listCensusMetadata(
-  name = "2020/acs/acs5",
   type = "geography")
 
 
 # Blockgroup variable dictionary (race/ethnicity vars) ####
-
-# specify desired variables
-bgpop_vars <- c("B03002_003E", "B02001_003E",
-  "B02001_004E", "B02001_005E",	
-  "B03002_012E", "B02001_006E",
-  "B02001_007E", "B02001_008E")
 
 # fetch relevant metadata
 bg_metadata <- listCensusMetadata(
@@ -51,12 +40,23 @@ bg_metadata <- listCensusMetadata(
   type = "variables"
 )
 
+bgpop_vars <- c("B03002_003E", "B03002_004E", "B03002_005E", 
+                "B03002_006E", "B03002_007E", "B03002_008E", 
+                "B03002_009E", "B03002_012E", "B03002_013E", 
+                "B03002_014E", "B03002_015E", "B03002_016E", 
+                "B03002_017E", "B03002_018E", "B03002_019E")
+
+
+
 # create dictionary for desired variables
-dictBG <- bg_metadata |>
-  filter(name %in% bgpop_vars) |>
+dictBG <- bg_metadata |> 
+  filter(name %in% bgpop_vars) |> tibble() |>
   select(name, label) |>
-  mutate(label = str_remove(label, "^E.+[:punct:]{2}"),
-         label = str_remove_all(label, "[:punct:]"))
+  mutate(label = str_remove(label, "Estimate!!Total:!!")) |>
+  arrange(name)
+
+range_write(ss = "1jEiEfNTP9ElkR1b3psr6eIH0RxjemhaaZkWuDNclpxI",
+            dictBG)
 
 
 
@@ -99,7 +99,7 @@ counties <- geoid |>
 # register n nodes for parallel processing of the loop below
 cl <- makeCluster(64)
 registerDoParallel(cl)
-getDoParWorkers()
+getDoParWorkers() #ensure correct number of nodes were registered
 
 # loop through each county to fetch block group stats, then collate
 bgRACE <- foreach(i=seq_len(nrow(counties)), .combine = "rbind") %dopar% {
@@ -108,22 +108,36 @@ bgRACE <- foreach(i=seq_len(nrow(counties)), .combine = "rbind") %dopar% {
   censusapi::getCensus(name = "acs/acs5",
                        vintage = 2020, 
                        vars = bgpop_vars, 
+                       key = "24a0e6e31ba71d8b3e0f70ba0b4037fd194d6aec",
                        region = "block group:*",
                        regionin = paste0("state:",counties$state[i],
                                          "+county:", counties$county[i]))
 }
 
-# add unique GEOID identifier
+
+# add unique GEOID identifier and create final racial categories
 bgRACE <- bgRACE |>
   mutate(GEOID = paste0(state,county,tract,block_group)) |>
   relocate(GEOID, .before = "state") |>
+  mutate(
+    WhiteNH = B03002_003E,
+    BlackNH = B03002_004E,
+    AminNH = B03002_005E,
+    AsianNH = B03002_006E + B03002_007E,
+    OtherNH = B03002_008E,
+    TwoMore = B03002_009E,
+    Hispan = B03002_012E,
+    WhiteHispan = B03002_013E,
+    BlackHispan = B03002_014E,
+    HispanOther = B03002_015E + B03002_016E + B03002_017E + B03002_018E + B03002_019E,
+    .keep = "unused"
+  )|>
   tibble()
 
 
 # save as csv to local file system
 write.csv(bgRACE,
-          file.path(output_dir, "bg_race.csv")
-          )
+          "output/bg_race.csv")
 
 
 
@@ -137,7 +151,7 @@ drive_auth(email = "gold1@stolaf.edu")
 census_id <- as_id("https://drive.google.com/drive/folders/1_08a11RyvSLHbzk9Kj2sylBVHqSmBX1-")
 
 # upload bg_race to census2022
-drive_upload(file.path(output_dir, "bg_race.csv"),
+drive_upload("code/bg_race.csv",
              census_id, 
              overwrite = TRUE)
 

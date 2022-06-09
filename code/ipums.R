@@ -17,7 +17,7 @@ library(tidyverse)
 library(ipumsr)
 
 # read in IPUMS data ####
-ddi <- read_ipums_ddi("~/Land_Use_Rights/Census/usa_00016.xml")
+ddi <- read_ipums_ddi("usa_00016.xml")
 data <- read_ipums_micro(ddi) # very large file
 
 
@@ -27,18 +27,20 @@ pctwaa_puma <- data |>
   # remove those in group quarters
   filter(GQ %in% c(1,2)) |>
   
-  # create new race variable
-  mutate(race_final = case_when(
-    RACE == 1 & HISPAN == 0 ~ 1,
-    RACE == 2 ~ 2,
-    RACE == 3 ~ 3,
-    RACE %in% c(4,5,6) ~ 4,
-    HISPAN != 0 ~ 5,
-    RACE == 7 ~ 6,
-    RACE == 8 ~ 7,
-  )) |>
   # remove all three or more races
   filter(RACE != 9) |>
+  
+  # create new race variable
+  mutate(race_final = case_when(
+    RACE == 1 & HISPAN == 0 ~ "WhiteNH",
+    RACE == 2 & HISPAN == 0 ~ "BlackNH",
+    RACE == 3 & HISPAN == 0 ~ "AminNH",
+    RACE %in% c(4,5,6) & HISPAN == 0 ~ "AsianNH",
+    RACE == 7 & HISPAN == 0 ~ "OtherNH",
+    RACE == 8 & HISPAN == 0 ~ "TwoMore",
+    HISPAN != 0 & RACE == 1 ~ "WhiteHispan",
+    HISPAN != 0 & RACE == 2 ~ "BlackHispan",
+    HISPAN != 0 & RACE != 1 & RACE != 2 ~ "HispanOther")) |>
   
   # add leading zeroes to 3-digit puma values
   mutate(PUMA = case_when(
@@ -95,7 +97,12 @@ pctwaa_puma2 <- pctwaa_puma1 |>
          above200_prop = above200/total) |>
   
   # remove poverty interval variables
-  select(!(a100_b125:b100)) |>
+  select(!c(a100_b125,
+            a150_b200,
+            a200,
+            b100,
+            a130_b150,
+            a125_b130)) |>
   
   # replace NAs with 0
   mutate(across(below100:above200_prop, ~ replace_na(.x, 0)))
@@ -104,16 +111,16 @@ pctwaa_puma2 <- pctwaa_puma1 |>
 
 # Save csv to output directory
 write_csv(pctwaa_puma2,
-          file = file.path(output_dir, "pctwaa_puma.csv")
-          )
+          file = "output/pctwaa_puma.csv")
 
 # Google Drive Connection ####
 census_id <- as_id("https://drive.google.com/drive/folders/1_08a11RyvSLHbzk9Kj2sylBVHqSmBX1-")
 
 drive_upload(
-  file.path(output_dir, "pctwaa_puma.csv"),
-  census_id
-)  
+  "output/pctwaa_puma.csv",
+  census_id,
+  overwrite = TRUE
+)
   
   
 
