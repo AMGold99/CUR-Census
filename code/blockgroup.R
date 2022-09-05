@@ -28,8 +28,9 @@ apis |>
 
 
 listCensusMetadata(
-  name = "2020/acs/acs5",
-  type = "geography")
+  name = "2019/acs/acs5",
+  type = "geography") |>
+  View()
 
 
 # Blockgroup variable dictionary (race/ethnicity vars) ####
@@ -106,7 +107,7 @@ bgRACE <- foreach(i=seq_len(nrow(counties)), .combine = "rbind") %dopar% {
   
   # Block group race/ethnicity
   censusapi::getCensus(name = "acs/acs5",
-                       vintage = 2020, 
+                       vintage = 2019, 
                        vars = bgpop_vars, 
                        key = "24a0e6e31ba71d8b3e0f70ba0b4037fd194d6aec",
                        region = "block group:*",
@@ -151,7 +152,7 @@ drive_auth(email = "gold1@stolaf.edu")
 census_id <- as_id("https://drive.google.com/drive/folders/1_08a11RyvSLHbzk9Kj2sylBVHqSmBX1-")
 
 # upload bg_race to census2022
-drive_upload("code/bg_race.csv",
+drive_upload("output/bg_race.csv",
              census_id, 
              overwrite = TRUE)
 

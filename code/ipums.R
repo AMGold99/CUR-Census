@@ -1,6 +1,6 @@
 #--------------------------
 #
-#   IPUMS (Extract 16)
+#   IPUMS (Extract 17)
 #      Working Age 
 #    by Race and Sex
 #           -
@@ -17,7 +17,7 @@ library(tidyverse)
 library(ipumsr)
 
 # read in IPUMS data ####
-ddi <- read_ipums_ddi("usa_00016.xml")
+ddi <- read_ipums_ddi("usa_00017.xml")
 data <- read_ipums_micro(ddi) # very large file
 
 
@@ -29,7 +29,7 @@ pctwaa_puma <- data |>
   
   # remove all three or more races
   filter(RACE != 9) |>
-  
+
   # create new race variable
   mutate(race_final = case_when(
     RACE == 1 & HISPAN == 0 ~ "WhiteNH",
@@ -44,7 +44,8 @@ pctwaa_puma <- data |>
   
   # add leading zeroes to 3-digit puma values
   mutate(PUMA = case_when(
-    nchar(PUMA) == 3 ~ paste0("0",PUMA),
+    nchar(PUMA) == 3 ~ paste0("00",PUMA),
+    nchar(PUMA) == 4 ~ paste0("0",PUMA),
     TRUE ~ as.character(PUMA)
   ))
 
@@ -89,12 +90,12 @@ pctwaa_puma2 <- pctwaa_puma1 |>
          total = sum(below200, above200, na.rm = TRUE)) |>
   
   # create proportion variables
-  mutate(below100_prop = below100/total,
-         below125_prop = below125/total,
-         below130_prop = below130/total,
-         below150_prop = below150/total,
-         below200_prop = below200/total,
-         above200_prop = above200/total) |>
+#  mutate(below100_prop = below100/total,
+#         below125_prop = below125/total,
+#         below130_prop = below130/total,
+#         below150_prop = below150/total,
+#         below200_prop = below200/total,
+#         above200_prop = above200/total) |>
   
   # remove poverty interval variables
   select(!c(a100_b125,
@@ -105,7 +106,7 @@ pctwaa_puma2 <- pctwaa_puma1 |>
             a125_b130)) |>
   
   # replace NAs with 0
-  mutate(across(below100:above200_prop, ~ replace_na(.x, 0)))
+  mutate(across(below100:total, ~ replace_na(.x, 0)))
 
 
 

@@ -50,9 +50,12 @@ pumapop_vars <- c("B03002_003E", "B03002_004E", "B03002_005E",
                   "B03002_017E", "B03002_018E", "B03002_019E")
 
 pumaRACE <- getCensus(name = "acs/acs5",
-                      vintage = 2020,
-                      vars = bgpop_vars,
+                      vintage = 2019,
+                      vars = pumapop_vars,
                       region = "public use microdata area:*") |>
+  
+  filter(state %in% fips & !is.element(state, c('02','15'))) |>
+  
   mutate(
     WhiteNH = B03002_003E,
     BlackNH = B03002_004E,

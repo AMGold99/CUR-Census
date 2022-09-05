@@ -2,4 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-usa_00016.dat.gz
+*.dat.gz
+*.xml
+data
+output
