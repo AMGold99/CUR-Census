@@ -1,5 +1,5 @@
 library(tidyverse)
-
+library(arrow)
 ## Load Demographic Data ####
 
 ## PUMA level
@@ -102,8 +102,8 @@ pov_join_final |> skimr::skim()
 
 
 ## Write to file system ####
-write_csv(pov_join_final,
-          file = "output/bg-estimates.csv")
+write_parquet(pov_join_final,
+              "output/bg-estimates.pqt")
 
 
 ## Google Drive Connection
